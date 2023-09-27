@@ -1,7 +1,15 @@
 # Cognitive Search Index Setup
 
 This repo will provide you with 2 search indexes.  
+The first index will have the name that is in your .env file, "COG_SEARCH_INDEX"
+The second index will be the name that is in your.nev file "COG_SEARCH_INDEX" with "-vector" added to the end of it.
 
+Azure Cognitive Service Indexers manage updates/inserts and now deletes (in preview to your index).
+
+The following code will handle:
+1. Inserts/Updates to your index.
+2. In the event that a file is deleted from your index, an additional function is required to handle deleting from the second index.  **This is not yet implemented.**
+This will be a function triggered when a delete occurs from blob storage to delete the item from the second index.
 
 # Cog Search Index Configuration
 
