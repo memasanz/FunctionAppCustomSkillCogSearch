@@ -20,9 +20,9 @@ def push_to_vector_index(data, embeddings, source):
     index_name = os.environ['INDEX_NAME']
     key = os.environ['COG_SEARCH_KEY']
     credential = AzureKeyCredential(key)
-    index_client = SearchIndexClient(endpoint=service_endpoint, credential=credential)
-    
-    search_client = SearchIndexClient(service_endpoint, index_name, AzureKeyCredential(key))
+    #index_client = SearchIndexClient(endpoint=service_endpoint, credential=credential)
+    search_client = SearchClient(endpoint=service_endpoint, index_name=index_name, credential=credential)
+    #search_client = SearchIndexClient(service_endpoint, index_name, AzureKeyCredential(key))
     title_embeddings = generate_embeddings(source)
 
     docs = search_client.search(search_text=f"{source}", search_fields=["path"], include_total_count = True)
