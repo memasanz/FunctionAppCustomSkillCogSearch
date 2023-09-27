@@ -49,7 +49,7 @@ def push_to_vector_index(data, embeddings, source):
         random_str = uuid.uuid4()
         logging.info(len(title_embeddings))
         logging.info(len(embedd))
-        path = "https://" + os.environ['STORAGE_ACCOUNT'] + ".blob.core.windows.net/" + os.environ['mmxcogstoragecontainer'] + "/" + source
+        path = "https://" + os.environ['STORAGE_ACCOUNT'] + ".blob.core.windows.net/" + os.environ['STORAGE_ACCOUNT_CONTAINER'] + "/" + source
         path = path.replace(' ', '%20')
         document = {
             "key": f"{random_str}",
