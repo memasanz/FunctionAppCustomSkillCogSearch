@@ -1,6 +1,14 @@
 # Cognitive Search Index Setup
 
-This repo will provide you with 2 search indexes.  
+This repo will provide you with **2** search indexes. 
+One search index includes the entire document, the second index includes a vector type and chunks of the document. 
+
+The concept here is to leverage BM25 for searching on the entire document, and then allowing a developer to filter the search for chunks based on the most approroate BM25 serach index.
+
+Chunking is cool, but cosine simularity will only take you so far.  
+
+BM25 takes into account the length of the entire document. Use the first search index to determine the correct documents, then leverage hybrid search filtering on the documents specified by your initial search.
+
 The first index will have the name that is in your .env file, "COG_SEARCH_INDEX"
 The second index will be the name that is in your.nev file "COG_SEARCH_INDEX" with "-vector" added to the end of it.
 
