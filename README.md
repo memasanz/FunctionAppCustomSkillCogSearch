@@ -1,3 +1,8 @@
+# Cognitive Search Index Setup
+
+This repo will provide you with 2 search indexes.  
+
+
 # Cog Search Index Configuration
 
 This repo holds 2 items.
@@ -35,7 +40,7 @@ functionAppUrlAndKey="https://funcationapp.azurewebsites.net/api/HttpTrigger1?co
 # Deploy Instructions
 0. Create a storage account if you don't have one already.  This will be the storage account that Cognitive Search will target with the indexer.
 1. Azure Cognitive Search - enable Semantic Config
-2. Deploy Azure Cognitive Service Multi Account in **SAME** region as Azure Cog Search
+2. Deploy Azure AI services in **SAME** region as Azure Cog Search
 2. Deploy Azure Function App - python linux in **SAME** region as Azure Cog Search
 3. In VS Code editor right click on "HttpTrigger1" and selected deploy.
 4. Configure you Azure Function App to connect
