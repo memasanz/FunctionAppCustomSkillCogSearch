@@ -16,41 +16,59 @@ from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents import SearchClient 
 
 def push_to_vector_index(data, embeddings, source):
+    logging.info('push_to_vector_index')
+    search_keys = []
     service_endpoint = os.environ['SERVICE_ENDPOINT']
     index_name = os.environ['INDEX_NAME']
     key = os.environ['COG_SEARCH_KEY']
     credential = AzureKeyCredential(key)
-    #index_client = SearchIndexClient(endpoint=service_endpoint, credential=credential)
+
     search_client = SearchClient(endpoint=service_endpoint, index_name=index_name, credential=credential)
-    #search_client = SearchIndexClient(service_endpoint, index_name, AzureKeyCredential(key))
     title_embeddings = generate_embeddings(source)
 
-    docs = search_client.search(search_text=f"{source}", search_fields=["path"], include_total_count = True)
+    path = "https://" + os.environ['STORAGE_ACCOUNT'] + ".blob.core.windows.net/" + os.environ['STORAGE_ACCOUNT_CONTAINER'] + "/" + source
+    path = path.replace(' ', '%20')
+    
+    docs = search_client.search(search_text=f"{source}", search_fields=["title"], include_total_count = True)
     count = docs.get_count()
+    logging.info('total count retrieved from search = ' + str(count))
     delete_docs = []
     if count > 0:
-        logging.info('deleting existing documents for index')
         for x in docs:
-            delete_docs.append({"key" : x['key']})
-            logging.info(delete_docs)
-        result = search_client.delete_documents(documents=delete_docs)
-        for i in range (0, len(result)):
-            if result[0].succeeded  == False:
-                raise ValueError('A very specific bad thing happened.')
-        logging.info('deletion occured:'  + str(len(result)))
+            if x['path'] == path:
+                delete_docs.append({"key" : x['key']})
+
+        
+        for x in delete_docs:
+            logging.info('during title: ' + source + ', deleting:' + str(x['key']) + 'title:'  + x['title'] + 'path:' + x['path'])
+
+        if len(delete_docs) > 0:
+            logging.info('delete_docs:' + str(len(delete_docs)))
+            result = search_client.delete_documents(documents=delete_docs)
+            for i in range (0, len(result)):
+                if result[0].succeeded  == False:
+                    raise ValueError('A very specific bad thing happened.')
+            logging.info('deletion occured:'  + str(len(result)))
     else:
         logging.info('no documents to delete')
 
+
+    logging.info('about to upload documents:' + str(len(data)))
 
     for i in range(len(data)):
         text = data[i]
         title_embeddings = title_embeddings
         embedd = embeddings[i]
-        random_str = uuid.uuid4()
-        logging.info(len(title_embeddings))
-        logging.info(len(embedd))
-        path = "https://" + os.environ['STORAGE_ACCOUNT'] + ".blob.core.windows.net/" + os.environ['STORAGE_ACCOUNT_CONTAINER'] + "/" + source
-        path = path.replace(' ', '%20')
+        random_str = source + "_" + str(i)
+        random_str = re.sub(r'[\[\]\(\)\*\&\^\%\$\#\@\!\.]', '-', random_str)
+        random_str = random_str.replace(" ", "-")
+
+        logging.info(str(random_str))
+        search_keys.append(str(random_str))
+        #logging.info(len(title_embeddings))
+        #logging.info(len(embedd))
+        logging.info(random_str)
+        
         document = {
             "key": f"{random_str}",
             "title": f"{source}",
@@ -59,13 +77,14 @@ def push_to_vector_index(data, embeddings, source):
             "contentVector": embedd,
             "titleVector": title_embeddings
         }
-
+        logging.info("uploading document")
         logging.info(document)
         result = search_client.upload_documents(documents=document)
         logging.info("Upload of new document succeeded: {}".format(result[0].succeeded))
         logging.info('**************************************')
         json_string = json.dumps(document)
-        logging.info(json_string)
+        #logging.info(json_string)
+    return search_keys
 
 
 
@@ -85,14 +104,14 @@ def text_split_embedd(relevant_data):
     df = pd.DataFrame(texts, columns =['text'])
     
     engine = os.environ['TEXT_EMBEDDING_MODEL']
-    logging.info('engine = ' + engine)
+    #logging.info('engine = ' + engine)
     start = 0
     df_result = pd.DataFrame()
     for i, g in df.groupby(df.index // 1):
         try:
-            logging.info(g)
-            logging.info(type(g))
-            logging.info('_' * 15)
+            # logging.info(g)
+            # logging.info(type(g))
+            # logging.info('_' * 15)
             g['curie_search'] = g["text"].apply(lambda x : get_embedding(x, engine =  engine))
 
             df_result = pd.concat([df_result,g], axis=0)
@@ -102,11 +121,11 @@ def text_split_embedd(relevant_data):
             logging.info('Error in get_embedding')
             continue
         finally:
-            logging.info('finally')
+            #logging.info('finally')
             continue
 
     df_result
-    logging.info(len(df_result))
+    #logging.info(len(df_result))
 
     embeddings = []
     data = []
@@ -140,14 +159,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         )
     
 def compose_response(json_data):
-    logging.info('compose response')
+    #logging.info('compose response')
     values = json.loads(json_data)['values']
 
     results = {}
     results["values"] = []
 
     for value in values:
-        logging.info('about to transform value')
+        #logging.info('about to transform value')
         outputRecord = transform_value(value)
         if outputRecord != None:
             results["values"].append(outputRecord)
@@ -155,9 +174,9 @@ def compose_response(json_data):
             logging.info('outputRecord is None')
     # Keeping the original accentuation with ensure_ascii=False
 
-    logging.info('**************************')
-    logging.info('results')
-    logging.info(results)
+    # logging.info('**************************')
+    # logging.info('results')
+    # logging.info(results)
     return json.dumps(results, ensure_ascii=False)
 
 def transform_value(value):
@@ -182,13 +201,13 @@ def transform_value(value):
 
     try:                
         # Getting the items from the values/data/text
-        logging.info('getting text data')
+        #logging.info('getting text data')
         searchresults = value['data']['text']
         source = value['data']['source']
-        logging.info(searchresults)
+        #logging.info(searchresults)
 
-        logging.info('source')
-        logging.info(source)
+        #logging.info('source')
+        #logging.info(source)
 
         API_BASE = os.environ["API_BASE"]
         API_KEY = os.environ["API_KEY"]
@@ -201,20 +220,20 @@ def transform_value(value):
         openai.api_version = API_VERSION
         openai.api_key  = API_KEY
         
-        logging.info(openai.api_key)
-        logging.info(openai.api_base)
-        logging.info(openai.api_version)
-        logging.info(openai.api_type)
+        # logging.info(openai.api_key)
+        # logging.info(openai.api_base)
+        # logging.info(openai.api_version)
+        # logging.info(openai.api_type)
 
         data, embeddings = text_split_embedd(searchresults)
 
-        push_to_vector_index(data, embeddings, source)
+        vector_search_keys = push_to_vector_index(data, embeddings, source)
 
-        logging.info('**********data********************')
-        logging.info(data)
+        # logging.info('**********data********************')
+        # logging.info(data)
 
-        logging.info('**********embeddings********************')
-        logging.info(embeddings)
+        # logging.info('**********embeddings********************')
+        # logging.info(embeddings)
     except Exception as e:
         logging.info(e)
         return (
@@ -227,6 +246,7 @@ def transform_value(value):
             "recordId": recordId,
             "data": {
                 "embeddings_text": data,
-                "embeddings": embeddings
+                "embeddings": embeddings,
+                "vector_search_keys": vector_search_keys
                     }
             })
