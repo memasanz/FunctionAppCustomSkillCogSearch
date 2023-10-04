@@ -29,31 +29,40 @@ def push_to_vector_index(data, embeddings, source):
     path = "https://" + os.environ['STORAGE_ACCOUNT'] + ".blob.core.windows.net/" + os.environ['STORAGE_ACCOUNT_CONTAINER'] + "/" + source
     path = path.replace(' ', '%20')
     
-    docs = search_client.search(search_text=f"{source}", search_fields=["title"], include_total_count = True)
-    count = docs.get_count()
-    logging.info('total count retrieved from search = ' + str(count))
-    delete_docs = []
-    if count > 0:
-        for x in docs:
-            if x['path'] == path:
-                delete_docs.append({"key" : x['key']})
+    try:
+        docs = search_client.search(search_text=f"{source}", search_fields=["title"], include_total_count = True)
+        count = docs.get_count()
+        logging.info('total count retrieved from search = ' + str(count))
+        delete_docs = []
+        if count > 0:
+            for x in docs:
+                if x['path'] == path:
+                    delete_docs.append({"key" : x['key']})
 
-        
-        for x in delete_docs:
-            logging.info('during title: ' + source + ', deleting:' + str(x['key']) + 'title:'  + x['title'] + 'path:' + x['path'])
+            
+            # for x in delete_docs:
+            #     logging.info("about to check delete docs")
+            #     strToLog = 'during title: ' + source + ', deleting:' + str(x['key']) + 'title:'  + x['title'] + 'path:' + x['path']
+            #     logging.info(strToLog)
 
-        if len(delete_docs) > 0:
-            logging.info('delete_docs:' + str(len(delete_docs)))
-            result = search_client.delete_documents(documents=delete_docs)
-            for i in range (0, len(result)):
-                if result[0].succeeded  == False:
-                    raise ValueError('A very specific bad thing happened.')
-            logging.info('deletion occured:'  + str(len(result)))
-    else:
-        logging.info('no documents to delete')
+            if len(delete_docs) > 0:
+                logging.info('about to delete documents')
+                logging.info('delete_docs:' + str(len(delete_docs)))
+                result = search_client.delete_documents(documents=delete_docs)
+                for i in range (0, len(result)):
+                    if result[0].succeeded  == False:
+                        raise ValueError('A very specific bad thing happened.')
+                logging.info('deletion occured:'  + str(len(result)))
+        else:
+            logging.info('no documents to delete')
 
+        logging.info('about to upload documents')
+        logging.info('about to upload documents:' + str(len(data)))
+    except Exception as e:
+        logging.info(e)
+        logging.info('Error in search_client.search')
+        pass
 
-    logging.info('about to upload documents:' + str(len(data)))
 
     for i in range(len(data)):
         text = data[i]
@@ -206,8 +215,8 @@ def transform_value(value):
         source = value['data']['source']
         #logging.info(searchresults)
 
-        #logging.info('source')
-        #logging.info(source)
+        logging.info('source')
+        logging.info(source)
 
         API_BASE = os.environ["API_BASE"]
         API_KEY = os.environ["API_KEY"]
