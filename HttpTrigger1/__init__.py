@@ -39,11 +39,6 @@ def push_to_vector_index(data, embeddings, source):
                 if x['path'] == path:
                     delete_docs.append({"key" : x['key']})
 
-            
-            # for x in delete_docs:
-            #     logging.info("about to check delete docs")
-            #     strToLog = 'during title: ' + source + ', deleting:' + str(x['key']) + 'title:'  + x['title'] + 'path:' + x['path']
-            #     logging.info(strToLog)
 
             if len(delete_docs) > 0:
                 logging.info('about to delete documents')
